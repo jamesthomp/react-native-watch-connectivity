@@ -1,5 +1,5 @@
 import {
-  EventSubscriptionVendor,
+  EventSubscription,
   NativeEventEmitter,
   NativeModules,
 } from 'react-native';
@@ -52,7 +52,7 @@ export interface NativeFileTransferEvent extends NativeFileTransfer {
   type: FileTransferEventType;
 }
 
-export interface IRNWatchNativeModule extends EventSubscriptionVendor {
+export interface IRNWatchNativeModule extends EventSubscription {
   dequeueFile: (ids: string[]) => void;
   dequeueUserInfo: (ids: string[]) => void;
   getApplicationContext: <
@@ -108,7 +108,7 @@ if (!__mod) {
 }
 
 export const NativeModule: IRNWatchNativeModule = __mod;
-export const nativeWatchEventEmitter = new NativeEventEmitter(NativeModule);
+export const nativeWatchEventEmitter = new NativeEventEmitter(__mod);
 
 export enum WatchEvent {
   EVENT_ACTIVATION_ERROR = 'WatchActivationError',
