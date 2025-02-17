@@ -1,51 +1,42 @@
-import {NativeModules, NativeEventEmitter} from 'react-native';
-
-type Callback = (data: any) => void;
+import {NativeEventEmitter, NativeModules} from 'react-native';
 
 // @ts-expect-error
 const isTurboModuleEnabled = global.__turboModuleProxy != null;
-const WearConnectivityModule = isTurboModuleEnabled
+const WearConnectivity = isTurboModuleEnabled
   ? require('./NativeWearConnectivity').default
   : NativeModules.WearConnectivity;
 
-const _addListener = (event: string, cb: Callback) => {
-  const nativeWatchEventEmitter = new NativeEventEmitter(
-    NativeModules.AndroidWearCommunication,
-  );
-  if (!event) {
-    throw new Error('Must pass event');
-  }
+export interface WearableDevice {
+  name: string;
+  id: string;
+  isNearby: boolean;
+}
 
-  switch (event) {
-    case 'message':
-    case 'file-received':
-    case 'reachability':
-      break;
-    default:
-      throw new Error(`Unknown watch event "${event}"`);
-  }
+export interface CapabilityEvent {
+  capability: string;
+  numNodes: number;
+}
 
-  const sub = nativeWatchEventEmitter.addListener(event, cb);
-  return () => sub.remove();
-};
+type Callback = (result?: any) => void;
+type Listener = (event: any) => void;
 
-const noOp = () => {};
+const eventEmitter = new NativeEventEmitter(WearConnectivity);
 
-export const sendMessage = (message: any, cb: Callback, errCb: Callback) => {
-  const json = {...message, event: 'message'};
-  const callbackWithDefault = cb ?? noOp;
-  const errCbWithDefault = errCb ?? noOp;
-  return WearConnectivityModule.sendMessage(
-    json,
-    callbackWithDefault,
-    errCbWithDefault,
-  );
-};
+export function isConnected(): Promise<boolean> {
+  return WearConnectivity.isConnected();
+}
+
+export function sendMessage(
+  message: any,
+  successCallback: Callback,
+  errorCallback: Callback,
+): void {
+  WearConnectivity.sendMessage(message, successCallback, errorCallback);
+}
 
 export const watchEvents = {
-  addListener: _addListener,
-};
-
-export function getReachability() {
-  return false;
+  addListener: (event: string, cb: Listener) => {
+    const sub = eventEmitter.addListener(event, cb);
+    return () => sub.remove();
+  },
 }

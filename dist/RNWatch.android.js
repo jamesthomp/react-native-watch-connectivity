@@ -1,40 +1,24 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.watchEvents = exports.sendMessage = void 0;
-exports.getReachability = getReachability;
+exports.watchEvents = void 0;
+exports.isConnected = isConnected;
+exports.sendMessage = sendMessage;
 const react_native_1 = require("react-native");
 // @ts-expect-error
 const isTurboModuleEnabled = global.__turboModuleProxy != null;
-const WearConnectivityModule = isTurboModuleEnabled
+const WearConnectivity = isTurboModuleEnabled
     ? require('./NativeWearConnectivity').default
     : react_native_1.NativeModules.WearConnectivity;
-const _addListener = (event, cb) => {
-    const nativeWatchEventEmitter = new react_native_1.NativeEventEmitter(react_native_1.NativeModules.AndroidWearCommunication);
-    if (!event) {
-        throw new Error('Must pass event');
-    }
-    switch (event) {
-        case 'message':
-        case 'file-received':
-        case 'reachability':
-            break;
-        default:
-            throw new Error(`Unknown watch event "${event}"`);
-    }
-    const sub = nativeWatchEventEmitter.addListener(event, cb);
-    return () => sub.remove();
-};
-const noOp = () => { };
-const sendMessage = (message, cb, errCb) => {
-    const json = { ...message, event: 'message' };
-    const callbackWithDefault = cb ?? noOp;
-    const errCbWithDefault = errCb ?? noOp;
-    return WearConnectivityModule.sendMessage(json, callbackWithDefault, errCbWithDefault);
-};
-exports.sendMessage = sendMessage;
-exports.watchEvents = {
-    addListener: _addListener,
-};
-function getReachability() {
-    return false;
+const eventEmitter = new react_native_1.NativeEventEmitter(WearConnectivity);
+function isConnected() {
+    return WearConnectivity.isConnected();
 }
+function sendMessage(message, successCallback, errorCallback) {
+    WearConnectivity.sendMessage(message, successCallback, errorCallback);
+}
+exports.watchEvents = {
+    addListener: (event, cb) => {
+        const sub = eventEmitter.addListener(event, cb);
+        return () => sub.remove();
+    },
+};
